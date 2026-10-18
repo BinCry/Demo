@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TikTok AI - Digital Body Language Tracker (Live Telemetry)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #070b14;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .neon-cyan {
+      box-shadow: 0 0 18px rgba(6, 182, 212, 0.22);
+      border: 1px solid rgba(6, 182, 212, 0.55);
+    }
+    .neon-pink {
+      box-shadow: 0 0 24px rgba(244, 63, 94, 0.35);
+      border: 1px solid rgba(244, 63, 94, 0.8);
+    }
+    .neon-emerald {
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+      border: 1px solid rgba(16, 185, 129, 0.6);
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    .blink { animation: pulse-fast 1s infinite; }
+
+    @keyframes modalPop {
+      0% { opacity: 0; transform: scale(0.94) translateY(10px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-animate { animation: modalPop 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col p-4 select-none relative">
+
+  <!-- HEADER -->
+  <header class="flex justify-between items-center pb-3 mb-3 border-b border-slate-800/90">
+    <div class="flex items-center gap-3">
+      <div class="w-3 h-3 rounded-full bg-rose-500 blink"></div>
+      <div>
+        <h1 class="text-lg font-extrabold tracking-wider uppercase text-white flex items-center gap-2">
+          TikTok Discovery Engine
+          <span class="text-xs mono bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded">
+            DIGITAL BODY LANGUAGE TRACKER v4.5
+          </span>
+        </h1>
+        <p class="text-xs text-slate-400 mono">Session Context: 11:09 AM | Location: Ho Chi Minh City | Battery: 85% | Wi-Fi</p>
+      </div>
+    </div>
+    
+    <!-- Cụm nút điều khiển Demo (ĐÃ XÓA NÚT CHỌN FILE) -->
+    <div class="flex items-center gap-2.5">
+      <button id="playBtn" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-sm transition shadow-lg shadow-cyan-500/20">
+        ▶ Chạy Demo
+      </button>
+      <button id="resetBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-1.5 rounded-lg text-sm border border-slate-700 transition">
+        ↺ Reset
+      </button>
+      <button id="showVerdictBtn" class="hidden bg-rose-600 hover:bg-rose-500 text-white font-semibold px-3.5 py-1.5 rounded-lg text-sm transition shadow-lg shadow-rose-600/30">
+        📊 Xem Kết Luận AI
+      </button>
+      <div class="mono text-lg font-bold text-cyan-400 bg-slate-900 px-3.5 py-1 rounded-lg border border-slate-800 min-w-[95px] text-center">
+        <span id="timerDisplay">00.0s</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN SPLIT SCREEN -->
+  <main class="flex-1 grid grid-cols-12 gap-5 overflow-hidden">
+    
+    <!-- NỬA TRÁI: MÀN HÌNH ĐIỆN THOẠI (4 CỘT) -->
+    <div class="col-span-4 flex flex-col items-center justify-between bg-slate-900/50 rounded-2xl border border-slate-800/90 p-3 relative">
+      <div class="w-full flex justify-between items-center px-2">
+        <span class="text-[11px] uppercase tracking-widest text-slate-400 font-semibold">Frontend: User Screen</span>
+        <span id="phaseBadge" class="mono text-[11px] bg-slate-800 text-cyan-300 px-2 py-0.5 rounded border border-slate-700">
+          00.0s - Ready
+        </span>
+      </div>
+      
+      <!-- Khung Điện Thoại iPhone -->
+      <div class="w-[285px] h-[565px] bg-black rounded-[38px] border-[6px] border-slate-700 shadow-2xl overflow-hidden relative flex items-center justify-center my-auto">
+        <!-- Đặt tên file video của bạn là demo.mp4 nằm cùng thư mục với file HTML này -->
+        <video id="mainVideo" src="demo.mp4" class="w-full h-full object-cover" playsinline preload="auto"></video>
+        
+        <!-- Lớp phủ hướng dẫn nếu chưa tìm thấy file demo.mp4 -->
+        <div id="videoFallback" class="hidden absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center text-center p-5">
+          <div class="text-4xl mb-2">📱</div>
+          <p class="text-slate-200 font-bold text-sm mb-1">Đang chạy chế độ Đồng bộ Thời gian thực</p>
+          <p class="text-slate-400 text-xs mb-4">Để hiển thị hình ảnh video, hãy đặt file video quay màn hình tên là <code class="text-cyan-400 font-bold">demo.mp4</code> cùng thư mục với file HTML này.</p>
+          <div id="simStageBox" class="w-full p-3 bg-slate-900 border border-cyan-500/40 rounded-xl text-cyan-300 mono text-xs">
+            Sẵn sàng chạy kịch bản 63.1 giây...
+          </div>
+        </div>
+      </div>
+
+      <!-- Thanh tiến trình video -->
+      <div class="w-full px-2">
+        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+          <div id="videoProgressBar" class="bg-gradient-to-r from-cyan-400 via-rose-500 to-amber-400 h-full transition-all duration-150" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NỬA PHẢI: AI DATA DASHBOARD (8 CỘT) -->
+    <div class="col-span-8 flex flex-col gap-3.5 overflow-hidden">
+      
+      <!-- HÀNG 1: 4 CHỈ SỐ REAL-TIME -->
+      <div class="grid grid-cols-4 gap-3.5">
+        <div id="cardTag" class="bg-slate-900/90 p-3.5 rounded-xl neon-cyan transition-all">
+          <div class="text-slate-400 text-[11px] uppercase font-semibold">Content Classification</div>
+          <div id="metricTag" class="mono text-sm font-bold text-white mt-1 truncate">Home_Screen_Idle</div>
+          <div id="metricSubTag" class="text-[11px] text-cyan-400 mt-1 mono truncate">Waiting for app launch...</div>
+        </div>
+
+        <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
+          <div class="text-slate-400 text-[11px] uppercase font-semibold">Dwell Time (Thời gian dừng)</div>
+          <div id="metricDwell" class="mono text-2xl font-extrabold text-emerald-400 mt-0.5">0.0s</div>
+          <div id="metricSwipe" class="text-[11px] text-slate-400 mt-1 mono truncate">Swipe Velocity: --</div>
+        </div>
+
+        <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
+          <div class="text-slate-400 text-[11px] uppercase font-semibold">Micro-Interaction</div>
+          <div id="metricMicro" class="mono text-sm font-bold text-amber-400 mt-1 truncate">None (Like = 0)</div>
+          <div id="metricSignal" class="text-[11px] text-slate-400 mt-1 mono truncate">Signal Weight: +0 pts</div>
+        </div>
+
+        <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
+          <div class="text-slate-400 text-[11px] uppercase font-semibold">Buying Intent Score</div>
+          <div id="metricIntent" class="mono text-2xl font-extrabold text-rose-400 mt-0.5">5%</div>
+          <div id="metricCart" class="text-[11px] text-slate-400 mt-1 mono truncate">Cart Price: --</div>
+        </div>
+      </div>
+
+      <!-- HÀNG 2: INTEREST GRAPH & TRẠNG THÁI NÃO BỘ -->
+      <div class="grid grid-cols-12 gap-3.5">
+        
+        <!-- Cột điểm Interest Graph (7 cột) -->
+        <div class="col-span-7 bg-slate-900/90 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Interest Graph Clustering (Real-time Weights)</span>
+            <span class="mono text-[11px] text-cyan-400">Trigger Threshold: 85%</span>
+          </div>
+          
+          <div class="space-y-2.5 my-auto">
+            <!-- Nhóm Giải trí / Đồ ăn / Tạp -->
+            <div>
+              <div class="flex justify-between text-xs mono mb-1">
+                <span class="text-slate-400">#Entertainment_Piano_Food_Cat</span>
+                <span id="scoreEntTxt" class="text-slate-400">20%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="barEnt" class="bg-slate-500 h-full transition-all duration-300" style="width: 20%"></div>
+              </div>
+            </div>
+
+            <!-- Nhóm Cộng đồng Sinh viên UIT -->
+            <div>
+              <div class="flex justify-between text-xs mono mb-1">
+                <span class="text-cyan-300">#UIT_CyberSecurity_Student</span>
+                <span id="scoreUitTxt" class="text-cyan-300">15%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="barUit" class="bg-cyan-400 h-full transition-all duration-300" style="width: 15%"></div>
+              </div>
+            </div>
+
+            <!-- Nhóm Mỹ phẩm chung (Lemonade, Dove) -->
+            <div>
+              <div class="flex justify-between text-xs mono mb-1">
+                <span class="text-amber-300">#Beauty_Cosmetics (Lemonade / Dove)</span>
+                <span id="scoreBeautyTxt" class="text-amber-300">15%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="barBeauty" class="bg-amber-400 h-full transition-all duration-300" style="width: 15%"></div>
+              </div>
+            </div>
+
+            <!-- Nhóm Mục tiêu: Cocoon Vietnam -->
+            <div>
+              <div class="flex justify-between text-xs mono mb-1">
+                <span class="text-rose-400 font-bold">🎯 #Cocoon_Vegan_Skincare (Sen Hậu Giang / Bí Đao)</span>
+                <span id="scoreCocoonTxt" class="text-rose-400 font-bold">10%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                <div id="barCocoon" class="bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-500 h-full transition-all duration-300" style="width: 10%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cột Phân tích Tâm lý System 1 & 2 (5 cột) -->
+        <div id="decisionBox" class="col-span-5 bg-slate-900/90 p-4 rounded-xl border border-slate-800 flex flex-col justify-between transition-all duration-300">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-200">AI Psychological Read</span>
+            <span id="brainBadge" class="mono text-[11px] px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">
+              System 1: Active
+            </span>
+          </div>
+
+          <div class="my-auto py-2">
+            <div class="text-[11px] text-slate-400 uppercase mb-1">Giải mã hành vi ngầm (Implicit Decode):</div>
+            <div id="sentimentText" class="text-sm font-bold text-white leading-snug">
+              Chờ người dùng mở ứng dụng...
+            </div>
+          </div>
+
+          <div id="engineActionBox" class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 mono text-[11px] text-slate-300 leading-relaxed">
+            Engine Status: Standby.
+          </div>
+        </div>
+      </div>
+
+      <!-- HÀNG 3: TERMINAL LOG REAL-TIME -->
+      <div class="flex-1 bg-slate-950 rounded-xl border border-slate-800 p-3.5 flex flex-col overflow-hidden">
+        <div class="flex justify-between items-center pb-2 mb-2 border-b border-slate-900">
+          <span class="mono text-xs text-emerald-400 font-bold flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 blink"></span>
+            LIVE TELEMETRY STREAM (MICRO-INTERACTION LOGS)
+          </span>
+          <span class="mono text-[11px] text-slate-500">No Like Needed // Implicit Tracking Active</span>
+        </div>
+        <div id="logContainer" class="flex-1 overflow-y-auto mono text-xs space-y-1.5 pr-2">
+          <div class="text-slate-500">[SYSTEM] Khởi tạo hệ thống phân tích Ngôn ngữ cơ thể số (Digital Body Language)...</div>
+          <div class="text-slate-400">[READY] Đã đồng bộ kịch bản 63.1 giây (11:09 AM). Nhấn "▶ Chạy Demo" để bắt đầu.</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MODAL KẾT LUẬN HÀNH VI & KỊCH BẢN PHÂN PHỐI TIẾP THEO (HIỆN KHI HẾT VIDEO) -->
+  <div id="verdictModal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-6">
+    <div class="bg-slate-900 border-2 border-rose-500/80 rounded-2xl max-w-5xl w-full p-6 shadow-2xl modal-animate flex flex-col gap-5">
+      
+      <!-- Modal Header -->
+      <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 bg-rose-500/20 text-rose-400 border border-rose-500/40 rounded text-xs mono font-bold uppercase">
+              AI Final Verdict // Session 63.1s Completed
+            </span>
+            <span class="text-xs mono text-emerald-400">● Confidence Score: 98.4%</span>
+          </div>
+          <h2 class="text-2xl font-extrabold text-white mt-1.5">
+            KẾT LUẬN HÀNH VI & KỊCH BẢN BỦA VÂY CHO LẦN LƯỚT TIẾP THEO
+          </h2>
+        </div>
+        <button id="closeModalBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs mono border border-slate-700">
+          ✕ Đóng bảng (Xem lại Dashboard)
+        </button>
+      </div>
+
+      <!-- Modal Body: 2 Cột -->
+      <div class="grid grid-cols-12 gap-5">
+        
+        <!-- Cột Trái: Kết luận hồ sơ hành vi (5 cột) -->
+        <div class="col-span-5 bg-slate-950/90 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-3 flex items-center gap-1.5">
+              <span>🧠</span> 1. Giải mã Hồ sơ Người dùng (User Persona)
+            </h3>
+            
+            <div class="space-y-3 text-xs">
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                <div class="text-slate-400">Nhân khẩu & Ngữ cảnh (Context):</div>
+                <div class="text-white font-semibold mt-0.5">Sinh viên ĐH CNTT (UIT) tại TP.HCM • Lướt giải trí giữa trưa (11:09 AM).</div>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-rose-500/40">
+                <div class="text-rose-400 font-bold">Tín hiệu Mua hàng Cốt lõi (33.8s Dwell Time):</div>
+                <ul class="mt-1 space-y-1 text-slate-300 list-disc list-inside">
+                  <li>Dù <b>KHÔNG thả tim</b>, nhưng dừng lại <b>33.8 giây</b> ở video Nước tẩy trang Sen Hậu Giang Cocoon.</li>
+                  <li>Bấm mở <b>Giỏ hàng vàng (4.3s)</b> kiểm tra giá <span class="text-amber-400 mono">288.749đ</span>.</li>
+                  <li>Mở <b>Comment (3.4s)</b> và lướt sâu tab <b>Reviews 563 đánh giá (17.1s)</b> -> <i>Đang tìm Bằng chứng xã hội (Social Proof) để vượt qua rào cản nghi ngờ cuối cùng!</i></li>
+                </ul>
+              </div>
+
+              <div class="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/40">
+                <div class="text-emerald-400 font-bold">Chẩn đoán Lý do chưa bấm Thanh toán:</div>
+                <div class="text-slate-200 mt-0.5">Đã bị thuyết phục về chất lượng (nhờ đọc 563 reviews), nhưng còn <b>chần chừ nhẹ về giá (288k)</b> và đang tìm thêm dòng sản phẩm phù hợp da dầu/mụn.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cột Phải: Kịch bản phân phối cho lần dạo chơi tiếp theo (7 cột) -->
+        <div class="col-span-7 bg-slate-950/90 p-4 rounded-xl neon-pink flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                <span>🎯</span> 2. Kịch bản Phân phối cho Lần lướt tiếp theo (The Infinite Loop)
+              </h3>
+              <span class="mono text-[11px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded">Auto-Injected to Feed</span>
+            </div>
+
+            <p class="text-xs text-slate-300 mb-3">
+              Ngay từ giây <span class="mono text-cyan-400 font-bold">52.3s</span> và <span class="mono text-cyan-400 font-bold">61.7s</span> trong video, thuật toán đã bắt đầu bủa vây. Trong <b>lần mở app tiếp theo</b>, hệ thống sẽ thực thi chuỗi 3 đòn chốt hạ:
+            </p>
+
+            <div class="space-y-2.5 text-xs">
+              <!-- Đòn 1 -->
+              <div class="p-3 rounded-xl bg-slate-900 border-l-4 border-cyan-400 flex gap-3 items-start">
+                <div class="bg-cyan-500/20 text-cyan-300 mono font-bold px-2 py-1 rounded text-xs">ĐÒN 1</div>
+                <div>
+                  <div class="font-bold text-white">Bán chéo & Đa dạng hóa mồi nhử (Cross-Sell & Down-Sell)</div>
+                  <div class="text-slate-300 mt-0.5">
+                    Tiếp tục đẩy các dòng khác của Cocoon như <b>Kem chống nắng Sen Hậu Giang</b> (như ở giây 52.3) và <b>Combo Tẩy trang Bí Đao</b> (như ở giây 61.7) để xem người dùng thích "Sen Hậu Giang" hay "Bí Đao" hơn.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Đòn 2 -->
+              <div class="p-3 rounded-xl bg-slate-900 border-l-4 border-amber-400 flex gap-3 items-start">
+                <div class="bg-amber-500/20 text-amber-300 mono font-bold px-2 py-1 rounded text-xs">ĐÒN 2</div>
+                <div>
+                  <div class="font-bold text-white">Đẩy thẳng vào Phiên Mega Livestream (Kích hoạt FOMO & System 1)</div>
+                  <div class="text-slate-300 mt-0.5">
+                    Khi người dùng lướt tới video KOC Văn Bình (giây 61.7: <i>"Mời cả nhà vào live em săn deal Cocoon nha"</i>), lần mở app tới sẽ ưu tiên <b>hiện trực tiếp phòng Livestream đang đếm ngược Flash Sale</b> để triệt tiêu thời gian suy nghĩ.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Đòn 3 -->
+              <div class="p-3 rounded-xl bg-slate-900 border-l-4 border-rose-500 flex gap-3 items-start">
+                <div class="bg-rose-500/20 text-rose-300 mono font-bold px-2 py-1 rounded text-xs">ĐÒN 3</div>
+                <div>
+                  <div class="font-bold text-white">Bơm Voucher Giảm Giá Mục Tiêu (Retargeting Subsidized Coupon)</div>
+                  <div class="text-slate-300 mt-0.5">
+                    Vì người dùng đã xem giá <span class="mono text-amber-300">288.749đ</span> mà thoát ra, TikTok Shop sẽ tự động gắn pop-up <b>"Voucher Giảm thêm 35.000đ dành riêng cho bạn - Hết hạn sau 15 phút"</b> ngay khi vừa mở lại giỏ hàng để ép chốt đơn trong 3 giây!
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-slate-800 flex justify-between items-center text-[11px] mono text-slate-400">
+            <span>Takeaway: Khách hàng tưởng mình tự tình cờ lướt thấy, nhưng thực chất đã nằm trong kịch bản của AI.</span>
+            <span class="text-rose-400 font-bold">LOOP STATUS: LOCKED 🔒</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // MẢNG TIMELINE KHỚP CHÍNH XÁC TỪNG MỐC GIÂY TRONG VIDEO CỦA BẠN (00.0s -> 63.1s)
+    const timelineEvents = [
+      {
+        start: 0.0, end: 1.7,
+        phase: "00.0s - 01.7s | Mở App",
+        tag: "iOS_Home_Screen -> Launch",
+        subTag: "Session Start: 11:09 AM (Midday Break)",
+        swipe: "Tap Icon (0ms friction)",
+        micro: "App_Open_Event",
+        signal: "+5 pts (Context)",
+        intent: 5, cart: "--",
+        ent: 20, uit: 15, beauty: 15, cocoon: 10,
+        brain: "System 2: Low (Giờ nghỉ trưa)",
+        sentiment: "Mở app lúc 11h09 trưa -> Não bộ tìm kiếm giải trí nhanh, hàng rào phòng vệ lý trí giảm.",
+        engine: "Auto-Play Hook: Phát video ngay lập tức không cần gõ tìm kiếm.",
+        log: "[00.1s] SESSION_START: 11:09 AM | Device: iPhone (Pin 85%). Bắt đầu thu thập Ngôn ngữ cơ thể số..."
+      },
+      {
+        start: 1.8, end: 3.2,
+        phase: "01.8s - 03.2s | Lướt nhanh",
+        tag: "#Piano_Tutorial (Love Story)",
+        subTag: "Creator: @coverpianowav",
+        swipe: "1350 px/s (Vuốt bỏ nhanh)",
+        micro: "Skip < 1.5s",
+        signal: "-10 pts (Low Interest)",
+        intent: 5, cart: "--",
+        ent: 15, uit: 15, beauty: 15, cocoon: 10,
+        brain: "System 1: Scanning",
+        sentiment: "Chỉ dừng 1.4 giây ở video Piano rồi vuốt qua -> Không đúng tâm trạng hiện tại.",
+        engine: "Action: Giảm trọng số nhóm #Music_Tutorial trong phiên này.",
+        log: "[01.8s] VIDEO_1 (#Piano_LoveStory): Dwell_Time = 1.4s (< 2s threshold) -> Fast Swipe Detected (-10 pts)."
+      },
+      {
+        start: 3.3, end: 4.4,
+        phase: "03.3s - 04.4s | Lướt bỏ",
+        tag: "#Food_Street (Khoai mỡ chiên)",
+        subTag: "Creator: Khoai mỡ chiên Xuân Mai",
+        swipe: "1620 px/s (Vuốt cực nhanh)",
+        micro: "Instant_Skip (1.1s)",
+        signal: "-15 pts (Rejected)",
+        intent: 5, cart: "--",
+        ent: 8, uit: 15, beauty: 15, cocoon: 10,
+        brain: "System 1: Rejecting",
+        sentiment: "Lướt qua video Khoai mỡ chiên chỉ trong 1.1 giây -> Không có nhu cầu ăn vặt lúc này.",
+        engine: "Action: Loại bỏ nhánh #Street_Food khỏi hàng đợi đề xuất.",
+        log: "[03.3s] VIDEO_2 (#KhoaiMoChien): Dwell_Time = 1.1s. Swipe velocity = 1620px/s -> Bỏ qua chủ đề Đồ ăn."
+      },
+      {
+        start: 4.5, end: 6.6,
+        phase: "04.5s - 06.6s | Quảng cáo mồi",
+        tag: "#Beauty_Ad (Lemonade 20/10)",
+        subTag: "Quách Ánh Livestream Teaser",
+        swipe: "850 px/s (Khựng nhẹ 2.1s)",
+        micro: "Visual_Pause (2.1s)",
+        signal: "+12 pts (Beauty Signal)",
+        intent: 18, cart: "Deal 6xK",
+        ent: 8, uit: 15, beauty: 38, cocoon: 22,
+        brain: "System 1: Noticed",
+        sentiment: "Khựng lại 2.1 giây đọc banner Săn deal Lemonade -> Có phản ứng nhẹ với từ khóa Mỹ phẩm/Deal.",
+        engine: " Discovery Probe: Phát hiện tín hiệu quan tâm Làm đẹp -> Chuẩn bị bơm Ad Mỹ phẩm mạnh hơn!",
+        log: "[04.5s] VIDEO_3 (#Lemonade_Livestream): Dwell_Time = 2.1s. Ghi nhận tín hiệu chú ý nhóm #Beauty_Deal (+12 pts)."
+      },
+      {
+        start: 6.7, end: 8.6,
+        phase: "06.7s - 08.6s | Social Graph",
+        tag: "#Social_Graph (People You May Know)",
+        subTag: "Tag: #dalat Photo Mode",
+        swipe: "1200 px/s (Bỏ qua 1.9s)",
+        micro: "Ignore_Social_Graph",
+        signal: "0 pts (Neutral)",
+        intent: 18, cart: "--",
+        ent: 8, uit: 15, beauty: 38, cocoon: 25,
+        brain: "System 1: Passive",
+        sentiment: "Bỏ qua đề xuất bạn bè (Social Graph) sau 1.9 giây -> Sẵn sàng nhận nội dung theo Interest Graph.",
+        engine: "Injecting Target Ad: Đẩy video KOC Nước tẩy trang Cocoon Sen Hậu Giang ở cú vuốt kế tiếp!",
+        log: "[06.7s] VIDEO_4 (People_You_May_Know): Bỏ qua kết nối xã hội (1.9s). Chuyển sang chế độ tấn công bằng Interest Graph."
+      },
+      {
+        start: 8.7, end: 14.3,
+        phase: "08.7s - 14.3s | BẮT ĐẦU DÍNH MỒI",
+        tag: "🎯 #Cocoon_SenHauGiang (Ad)",
+        subTag: "Creator: Nhà Pé Su | Combo 2 Nước Tẩy Trang",
+        swipe: "0 px/s (DỪNG HẲN TAY!)",
+        micro: "Eye_Lock + Audio_100%",
+        signal: "+30 pts (Strong Hook!)",
+        intent: 52, cart: "Yellow Cart Active",
+        ent: 5, uit: 15, beauty: 50, cocoon: 62,
+        brain: "Dopamine Loop: ON!",
+        sentiment: "Ngón tay dừng hẳn suốt 5.6 giây nghe KOC báo 'Mua 1 tặng 1 Nước tẩy trang Sen Hậu Giang'!",
+        engine: "Hook Success: Người dùng đã cắn câu! Đang theo dõi xem có bấm vào Giỏ hàng vàng không...",
+        log: "[08.7s] 🎯 TARGET_HIT (#Cocoon_NuocTayTrang): Người dùng dừng lướt! Xem liên tục 5.6s (Dwell Time vọt mạnh)."
+      },
+      {
+        start: 14.4, end: 18.7,
+        phase: "14.4s - 18.7s | BẤM GIỎ HÀNG VÀNG",
+        tag: "🛒 CLICK: YELLOW CART (Cocoon)",
+        subTag: "Combo 2 Nước Tẩy Trang Giảm 37%",
+        swipe: "In-App Product Sheet",
+        micro: "CLICK_CART (View Price)",
+        signal: "+50 pts (HIGH INTENT!)",
+        intent: 82, cart: "288.749đ (-53%)",
+        ent: 5, uit: 10, beauty: 65, cocoon: 85,
+        brain: "System 1 vs System 2",
+        sentiment: "Bấm thẳng vào Giỏ hàng vàng góc trái! Đang nhìn giá 288.749đ (Freeship + Flash Sale đếm ngược).",
+        engine: "🔥 HIGH BUYING INTENT: Không cần thả tim! Hành vi mở giỏ hàng = Xác nhận nhu cầu thực tế!",
+        log: "[14.4s] 🚨 CRITICAL_ACTION: Click_Yellow_Cart! Đang xem giá Combo 2 chai = 288.749đ (Dừng 4.3s kiểm tra giá).",
+        highlightPink: true
+      },
+      {
+        start: 18.8, end: 20.0,
+        phase: "18.8s - 20.0s | Đóng giỏ, xem tiếp",
+        tag: "🎯 #Cocoon_SenHauGiang (Ad)",
+        subTag: "Đóng giỏ hàng nhưng CHƯA lướt đi!",
+        swipe: "0 px/s (Vẫn ở lại video)",
+        micro: "Hesitation_Detected",
+        signal: "+15 pts (Considering)",
+        intent: 85, cart: "288.749đ (Saved)",
+        ent: 5, uit: 10, beauty: 68, cocoon: 88,
+        brain: "Considering (Đắn đo)",
+        sentiment: "Đóng giỏ hàng nhưng không lướt qua video khác -> Còn hơi lăn tăn, chuẩn bị đi tìm bằng chứng xã hội!",
+        engine: "Tracking Micro-Behavior: Theo dõi hành động kiểm chứng niềm tin...",
+        log: "[18.8s] BEHAVIOR: Đóng giỏ hàng nhưng vẫn xem tiếp video (Không vuốt đi -> Đang cân nhắc)."
+      },
+      {
+        start: 20.1, end: 23.5,
+        phase: "20.1s - 23.5s | MỞ ĐỌC COMMENT",
+        tag: "💬 OPEN COMMENTS (3 Bình luận)",
+        subTag: "Checking: 'Chốt đơn', 'Đã mua giao sớm'",
+        swipe: "Reading Comments",
+        micro: "OPEN_COMMENT_TAB",
+        signal: "+35 pts (Social Proof)",
+        intent: 90, cart: "288.749đ",
+        ent: 5, uit: 10, beauty: 72, cocoon: 92,
+        brain: "Seeking Social Proof",
+        sentiment: "Bấm mở Comment đọc bình luận của người khác suốt 3.4 giây dù không thả tim!",
+        engine: "Insight: Chỉ có 3 bình luận ở ngoài -> Dự đoán người dùng sẽ bấm sang tab Reviews!",
+        log: "[20.1s] 💬 MICRO_ACTION: Open_Comments (3.4s). Người dùng tìm kiếm xác nhận xã hội (Like vẫn = 0).",
+        highlightPink: true
+      },
+      {
+        start: 23.6, end: 40.7,
+        phase: "23.6s - 40.7s | ĐỌC SÂU 563 REVIEWS!",
+        tag: "⭐ DEEP DIVE: TAB REVIEWS (563)",
+        subTag: "Lướt đọc từng đánh giá 5 sao + Ảnh thật (17.1 giây!)",
+        swipe: "Slow Scroll (Đọc kỹ từng dòng)",
+        micro: "SWITCH_TO_REVIEWS_TAB",
+        signal: "+80 pts (MAX SIGNAL!)",
+        intent: 96, cart: "288.749đ (Almost Bought)",
+        ent: 2, uit: 10, beauty: 85, cocoon: 98,
+        brain: "Trust Building (96%)",
+        sentiment: "Dành hẳn 17.1 GIÂY lướt đọc 563 Reviews thực tế trên TikTok Shop! Đọc kỹ bình luận so sánh với Bioderma, da hỗn hợp thiên dầu...",
+        engine: "🎯 KẾT LUẬN CỦA AI: Đã khóa chặt hồ sơ [Tín đồ Cocoon / Cần mua Nước tẩy trang]! Kích hoạt bủa vây!",
+        log: "[23.6s] 🔥🔥🔥 JACKPOT_SIGNAL: Chuyển sang tab [Reviews 563] và lướt đọc suốt 17.1 giây! Điểm quan tâm Cocoon chạm đỉnh 98%!",
+        highlightPink: true
+      },
+      {
+        start: 40.8, end: 42.5,
+        phase: "40.8s - 42.5s | Thoát Review",
+        tag: "🎯 #Cocoon_SenHauGiang (Ad)",
+        subTag: "Tổng thời gian dừng ở video này: 33.8 GIÂY!",
+        swipe: "Chuẩn bị vuốt tiếp",
+        micro: "Total_Dwell = 33.8s!",
+        signal: "Profile Locked 🔒",
+        intent: 96, cart: "Retargeting Queued",
+        ent: 2, uit: 10, beauty: 85, cocoon: 98,
+        brain: "Latent Need Activated",
+        sentiment: "Đóng tab Review và lướt đi (tưởng là đã thoát), nhưng AI đã xếp sẵn 2 video Cocoon khác ở phía dưới!",
+        engine: "Discovery Engine Triggered: Đang chèn thêm sản phẩm cùng hãng Cocoon vào ngay các cú vuốt kế tiếp!",
+        log: "[40.8s] SUMMARY VIDEO_5: Tổng Dwell_Time = 33.8 giây (Gấp 20 lần video thường!). Khóa mục tiêu Retargeting!"
+      },
+      {
+        start: 42.6, end: 52.2,
+        phase: "42.6s - 52.2s | Tín hiệu Sinh viên UIT",
+        tag: "🏆 #UIT_AnToanThongTin (RedTeam)",
+        subTag: "UIT-W1 Giành Giải Nhất An Ninh Mạng 2026",
+        swipe: "0 px/s (Xem 9.6 giây)",
+        micro: "Community_Pride_Pause",
+        signal: "+25 pts (Demographic)",
+        intent: 92, cart: "Retargeting Queued",
+        ent: 5, uit: 82, beauty: 85, cocoon: 98,
+        brain: "Identity Match: UITer",
+        sentiment: "Dừng lại 9.6 giây xem đội RedTeam UIT-W1 nhận bằng khen Giải Nhất -> AI xác nhận nhân khẩu học: Sinh viên UIT!",
+        engine: "Demographic Tagged: [Student_UIT_GenZ] -> Cực kỳ khớp với tệp khách hàng mục tiêu của Cocoon!",
+        log: "[42.6s] 🎓 DEMOGRAPHIC_LOCK (#AnToanThongTin_UIT): Xem 9.6s -> Xác nhận người dùng là Sinh viên UIT (Gen Z)."
+      },
+      {
+        start: 52.3, end: 56.5,
+        phase: "52.3s - 56.5s | AI BỦA VÂY LẦN 1 (Cross-Sell)",
+        tag: "🔁 AI PUSH #1: KCN Sen Hậu Giang",
+        subTag: "Kênh chính thức: Cocoon Vietnam (Tick xanh)",
+        swipe: "Watched 4.2s",
+        micro: "Cross_Sell_Exposure",
+        signal: "Infinite Loop Step 1",
+        intent: 94, cart: "Cross-Sell Active",
+        ent: 5, uit: 70, beauty: 88, cocoon: 99,
+        brain: "Familiarity Effect",
+        sentiment: "Vừa xem Nước tẩy trang Sen Hậu Giang ở trên, AI lập tức đẩy luôn Kem chống nắng Sen Hậu Giang của kênh chính hãng Cocoon!",
+        engine: "⚡ BẰNG CHỨNG VÒNG LẶP: Thuật toán dùng chính dòng 'Sen Hậu Giang' vừa xem để bán chéo (Cross-sell) ngay lập tức!",
+        log: "[52.3s] 🚀 LOOP_INJECTION_1: Đẩy ngay video [Kem chống nắng Sen Hậu Giang - Cocoon Vietnam] chỉ sau 1 video đệm!",
+        highlightPink: true
+      },
+      {
+        start: 56.6, end: 57.9,
+        phase: "56.6s - 57.9s | Lướt nhanh (1.3s)",
+        tag: "#Photo_Studio (Vàng chụp ảnh)",
+        subTag: "Chụp ảnh sinh nhật",
+        swipe: "1400 px/s (Vuốt bỏ)",
+        micro: "Skip (1.3s)",
+        signal: "-5 pts",
+        intent: 94, cart: "--",
+        ent: 10, uit: 65, beauty: 88, cocoon: 99,
+        brain: "System 1: Filtering",
+        sentiment: "Lướt qua video chụp ảnh trong 1.3 giây.",
+        engine: "Giữ nhịp độ giải trí xen kẽ trước khi tung đòn chốt hạ tiếp theo.",
+        log: "[56.6s] VIDEO_8 (#VangChupAnh): Dwell_Time = 1.3s -> Vuốt bỏ."
+      },
+      {
+        start: 58.0, end: 59.1,
+        phase: "58.0s - 59.1s | Lướt nhanh (1.1s)",
+        tag: "#Cat_Video (Tắm cho mèo)",
+        subTag: "Giải trí ngắn",
+        swipe: "1550 px/s (Vuốt bỏ)",
+        micro: "Skip (1.1s)",
+        signal: "-5 pts",
+        intent: 94, cart: "--",
+        ent: 12, uit: 60, beauty: 88, cocoon: 99,
+        brain: "System 1: Filtering",
+        sentiment: "Lướt qua video tắm mèo trong 1.1 giây.",
+        engine: "Chuẩn bị bơm tiếp sản phẩm tẩy tế bào chết / làm sạch da...",
+        log: "[58.0s] VIDEO_9 (#TamChoMeo): Dwell_Time = 1.1s -> Vuốt bỏ."
+      },
+      {
+        start: 59.2, end: 60.7,
+        phase: "59.2s - 60.7s | Thử nghiệm đối thủ",
+        tag: "#Competitor_Test (Tẩy tế bào chết Dove)",
+        subTag: "Creator: Huỳnh Bảo",
+        swipe: "1100 px/s (Xem 1.5s)",
+        micro: "A/B_Brand_Test",
+        signal: "+5 pts (#Skincare)",
+        intent: 95, cart: "--",
+        ent: 10, uit: 55, beauty: 92, cocoon: 99,
+        brain: "Brand Preference Check",
+        sentiment: "AI thử đẩy Tẩy da chết Dove nhưng người dùng vuốt qua sau 1.5s -> Xác nhận chỉ thích Cocoon!",
+        engine: "Brand Affinity Confirmed: Người dùng nghiêng hẳn về Cocoon -> Đẩy lại Deal Combo 2 chai Nước tẩy trang Cocoon!",
+        log: "[59.2s] A/B_TEST (#TayTeBaoChet_Dove): Dừng 1.5s rồi vuốt -> Bỏ qua Dove, quay lại bủa vây bằng Cocoon!"
+      },
+      {
+        start: 60.8, end: 61.6,
+        phase: "60.8s - 61.6s | Lướt cực nhanh (0.8s)",
+        tag: "#Catwalk_2018 (Mẫu nhí)",
+        subTag: "MoliQueen",
+        swipe: "1800 px/s (Skip ngay)",
+        micro: "Instant_Skip (0.8s)",
+        signal: "-10 pts",
+        intent: 95, cart: "--",
+        ent: 5, uit: 50, beauty: 92, cocoon: 99,
+        brain: "System 1: Fast Scroll",
+        sentiment: "Vuốt qua video mẫu nhí chỉ trong 0.8 giây.",
+        engine: "Tung đòn bủa vây số 2 ngay lập tức!",
+        log: "[60.8s] VIDEO_11 (#Catwalk): Dwell_Time = 0.8s -> Skip."
+      },
+      {
+        start: 61.7, end: 63.5,
+        phase: "61.7s - 63.1s | AI BỦA VÂY LẦN 2 (Chốt hạ!)",
+        tag: "🚨 AI PUSH #2: Combo 2 Nước Tẩy Trang Bí Đao",
+        subTag: "KOC: Văn Bình nè! ('Mời cả nhà vào live em săn deal Cocoon')",
+        swipe: "LOCKED IN LOOP!",
+        micro: "Livestream + Combo Retarget",
+        signal: "99/100 (FULL LOOP)",
+        intent: 99, cart: "Livestream Deal Ready",
+        ent: 5, uit: 50, beauty: 95, cocoon: 100,
+        brain: "IMPULSE BUY IMMINENT!",
+        sentiment: "Đúng mặt hàng vừa xem (Combo 2 chai Nước tẩy trang Cocoon) nhưng đổi sang dòng Bí Đao + Kêu gọi vào Livestream săn deal!",
+        engine: "🚨 VÒNG LẶP VÔ TẬN HOÀN TẤT: Không thoát đi đâu được! Đang tổng hợp Kết luận & Kịch bản cho lần lướt tiếp theo...",
+        log: "[61.7s] 🚨🚨 LOOP_INJECTION_2: Đẩy tiếp KOC Văn Bình bán [Combo 2 Nước tẩy trang Bí Đao Cocoon] + Mời vào Livestream!",
+        highlightPink: true
+      }
+    ];
+
+    const video = document.getElementById('mainVideo');
+    const videoFallback = document.getElementById('videoFallback');
+    const simStageBox = document.getElementById('simStageBox');
+    const playBtn = document.getElementById('playBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const showVerdictBtn = document.getElementById('showVerdictBtn');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const logContainer = document.getElementById('logContainer');
+    const verdictModal = document.getElementById('verdictModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const videoProgressBar = document.getElementById('videoProgressBar');
+
+    let simInterval = null;
+    let virtualTime = 0;
+    let isRunning = false;
+    let videoAvailable = true;
+    let triggeredSet = new Set();
+    let activeSegmentIndex = -1;
+    const TOTAL_DURATION = 63.1;
+
+    // Kiểm tra xem file demo.mp4 có tồn tại trong thư mục không
+    video.addEventListener('error', () => {
+      videoAvailable = false;
+      videoFallback.classList.remove('hidden');
+    });
+
+    function addLog(text, isHighlight = false) {
+      const div = document.createElement('div');
+      div.className = isHighlight
+        ? 'text-rose-400 font-bold bg-rose-950/30 px-2 py-0.5 rounded border-l-2 border-rose-500'
+        : 'text-emerald-400';
+      div.textContent = text;
+      logContainer.appendChild(div);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function updateTelemetry(t) {
+      timerDisplay.textContent = t.toFixed(1).padStart(4, '0') + 's';
+      const pct = Math.min((t / TOTAL_DURATION) * 100, 100);
+      videoProgressBar.style.width = pct + '%';
+
+      // Tìm phân đoạn hiện tại theo mốc giây
+      let segIdx = timelineEvents.findIndex(ev => t >= ev.start && t <= ev.end);
+      if (segIdx === -1 && t > 61.7) segIdx = timelineEvents.length - 1;
+
+      if (segIdx !== -1) {
+        const ev = timelineEvents[segIdx];
+        // Tính Dwell Time trực tiếp trên từng video hiện tại
+        let segmentDwell = Math.max(0, t - ev.start);
+        // Nếu đang ở chuỗi video Cocoon số 1 (từ 8.7s đến 42.5s: xem + mở giỏ + đọc comment + đọc review)
+        if (t >= 8.7 && t <= 42.5) {
+          segmentDwell = t - 8.7;
+        }
+        document.getElementById('metricDwell').textContent = segmentDwell.toFixed(1) + 's';
+
+        // Chỉ cập nhật UI & đẩy log khi bước sang phân đoạn mới
+        if (segIdx !== activeSegmentIndex) {
+          activeSegmentIndex = segIdx;
+          document.getElementById('phaseBadge').textContent = ev.phase;
+          document.getElementById('metricTag').textContent = ev.tag;
+          document.getElementById('metricSubTag').textContent = ev.subTag;
+          document.getElementById('metricSwipe').textContent = `Swipe: ${ev.swipe}`;
+          document.getElementById('metricMicro').textContent = ev.micro;
+          document.getElementById('metricSignal').textContent = `Weight: ${ev.signal}`;
+          document.getElementById('metricIntent').textContent = ev.intent + '%';
+          document.getElementById('metricCart').textContent = `Cart: ${ev.cart}`;
+
+          document.getElementById('scoreEntTxt').textContent = ev.ent + '%';
+          document.getElementById('barEnt').style.width = ev.ent + '%';
+          document.getElementById('scoreUitTxt').textContent = ev.uit + '%';
+          document.getElementById('barUit').style.width = ev.uit + '%';
+          document.getElementById('scoreBeautyTxt').textContent = ev.beauty + '%';
+          document.getElementById('barBeauty').style.width = ev.beauty + '%';
+          document.getElementById('scoreCocoonTxt').textContent = ev.cocoon + '%';
+          document.getElementById('barCocoon').style.width = ev.cocoon + '%';
+
+          document.getElementById('brainBadge').textContent = ev.brain;
+          document.getElementById('sentimentText').textContent = ev.sentiment;
+          document.getElementById('engineActionBox').textContent = ev.engine;
+
+          if (simStageBox) {
+            simStageBox.innerHTML = `<div class="font-bold text-white mb-1">${ev.phase}</div><div>${ev.tag}</div><div class="text-slate-400 mt-1">${ev.subTag}</div>`;
+          }
+
+          const decisionBox = document.getElementById('decisionBox');
+          if (ev.highlightPink) {
+            decisionBox.classList.add('neon-pink');
+          } else {
+            decisionBox.classList.remove('neon-pink');
+          }
+
+          if (!triggeredSet.has(segIdx)) {
+            triggeredSet.add(segIdx);
+            addLog(ev.log, !!ev.highlightPink);
+          }
+        }
+      }
+    }
+
+    function finishSession() {
+      isRunning = false;
+      if (simInterval) clearInterval(simInterval);
+      playBtn.textContent = '▶ Chạy lại';
+      showVerdictBtn.classList.remove('hidden');
+      addLog('[63.1s] >>> SESSION COMPLETED: Bung bảng Kết luận Hành vi & Kịch bản phân phối cho lần lướt tiếp theo!', true);
+      setTimeout(() => {
+        verdictModal.classList.remove('hidden');
+      }, 450);
+    }
+
+    playBtn.addEventListener('click', () => {
+      if (isRunning) {
+        isRunning = false;
+        playBtn.textContent = '▶ Tiếp tục';
+        if (videoAvailable) video.pause();
+        if (simInterval) clearInterval(simInterval);
+      } else {
+        // Nếu đã chạy xong mà bấm lại thì reset trước
+        if (virtualTime >= TOTAL_DURATION || (videoAvailable && video.ended)) {
+          resetDemo();
+        }
+        isRunning = true;
+        playBtn.textContent = '⏸ Tạm dừng';
+
+        if (videoAvailable) {
+          video.play().then(() => {
+            simInterval = setInterval(() => {
+              updateTelemetry(video.currentTime);
+              if (video.ended || video.currentTime >= TOTAL_DURATION) {
+                finishSession();
+              }
+            }, 80);
+          }).catch(() => {
+            // Fallback nếu chưa có file demo.mp4
+            videoAvailable = false;
+            videoFallback.classList.remove('hidden');
+            runVirtualClock();
+          });
+        } else {
+          runVirtualClock();
+        }
+      }
+    });
+
+    function runVirtualClock() {
+      simInterval = setInterval(() => {
+        virtualTime += 0.1;
+        updateTelemetry(virtualTime);
+        if (virtualTime >= TOTAL_DURATION) {
+          finishSession();
+        }
+      }, 100);
+    }
+
+    function resetDemo() {
+      isRunning = false;
+      virtualTime = 0;
+      activeSegmentIndex = -1;
+      triggeredSet.clear();
+      if (simInterval) clearInterval(simInterval);
+      if (videoAvailable) {
+        video.pause();
+        video.currentTime = 0;
+      }
+      verdictModal.classList.add('hidden');
+      showVerdictBtn.classList.add('hidden');
+      playBtn.textContent = '▶ Chạy Demo';
+      timerDisplay.textContent = '00.0s';
+      videoProgressBar.style.width = '0%';
+      document.getElementById('phaseBadge').textContent = '00.0s - Ready';
+      document.getElementById('metricTag').textContent = 'Home_Screen_Idle';
+      document.getElementById('metricSubTag').textContent = 'Waiting for app launch...';
+      document.getElementById('metricDwell').textContent = '0.0s';
+      document.getElementById('metricSwipe').textContent = 'Swipe Velocity: --';
+      document.getElementById('metricMicro').textContent = 'None (Like = 0)';
+      document.getElementById('metricIntent').textContent = '5%';
+      document.getElementById('metricCart').textContent = 'Cart Price: --';
+      document.getElementById('decisionBox').classList.remove('neon-pink');
+      logContainer.innerHTML = '<div class="text-slate-400">[SYSTEM] Đã reset. Nhấn "▶ Chạy Demo" để bắt đầu phiên theo dõi 63.1 giây.</div>';
+    }
+
+    resetBtn.addEventListener('click', resetDemo);
+    closeModalBtn.addEventListener('click', () => verdictModal.classList.add('hidden'));
+    showVerdictBtn.addEventListener('click', () => verdictModal.classList.remove('hidden'));
+  </script>
+</body>
+</html>
