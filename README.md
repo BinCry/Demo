@@ -16,7 +16,6 @@
   <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=1f2937" alt="JavaScript">
   <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS">
   <img src="https://img.shields.io/badge/Google_Fonts-4285F4?style=for-the-badge&logo=googlefonts&logoColor=white" alt="Google Fonts">
-  <img src="https://img.shields.io/badge/MP4-FF6F00?style=for-the-badge&logo=googleplay&logoColor=white" alt="MP4">
 </p>
 
 ---
